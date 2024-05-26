@@ -43,12 +43,30 @@ const Wrapper: React.FC<WrapperProps> = ({ cart, children }) => {
     paypalClientId !== undefined &&
     cart
   ) {
+    if (cart.payment_session?.data.subscription) {
+      return (
+        <PayPalScriptProvider
+          options={{
+            "client-id": "test",
+            currency: cart?.region.currency_code.toUpperCase(),
+            vault: true,
+            intent: "subscription",
+            components: "buttons",
+          }}
+        >
+          {children}
+        </PayPalScriptProvider>
+      )
+    }
+
     return (
       <PayPalScriptProvider
         options={{
           "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
           currency: cart?.region.currency_code.toUpperCase(),
-          intent: "authorize",
+          intent: cart.payment_session?.data.auto_capture
+            ? "capture"
+            : "authorize",
           components: "buttons",
         }}
       >

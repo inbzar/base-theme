@@ -209,14 +209,68 @@ const PayPalPaymentButton = ({
     _data: OnApproveData,
     actions: OnApproveActions
   ) => {
-    actions?.order
-      ?.authorize()
-      .then((authorization) => {
-        if (authorization.status !== "COMPLETED") {
-          setErrorMessage(`An error occurred, status: ${authorization.status}`)
+    if (session.data.auto_capture) {
+      actions?.order
+        ?.capture()
+        .then((orderResponse) => {
+          if (orderResponse.status !== "COMPLETED") {
+            setErrorMessage(
+              `An error occurred, status: ${orderResponse.status}`
+            )
+            return
+          }
+          onPaymentCompleted()
+        })
+        .catch(() => {
+          setErrorMessage(`An unknown error occurred, please try again.`)
+          setSubmitting(false)
+        })
+    } else {
+      actions?.order
+        ?.authorize()
+        .then((authorization) => {
+          if (authorization.status !== "COMPLETED") {
+            setErrorMessage(
+              `An error occurred, status: ${authorization.status}`
+            )
+            return
+          }
+          onPaymentCompleted()
+        })
+        .catch(() => {
+          setErrorMessage(`An unknown error occurred, please try again.`)
+          setSubmitting(false)
+        })
+    }
+  }
+
+  const handleSubscription = async (
+    _data: OnApproveData,
+    actions: OnApproveActions
+  ) => {
+    actions?.subscription
+      ?.get()
+      // @ts-ignore
+      .then((subscription: SubscriptionDetail["value"]) => {
+        if (
+          subscription.status === "APPROVED" ||
+          subscription.status === "ACTIVE"
+        ) {
+          onPaymentCompleted()
           return
         }
-        onPaymentCompleted()
+
+        if (subscription.status === "EXPIRED") {
+          const cycleExec = subscription.billing_info?.cycle_executions?.find(
+            (cycle) => cycle.tenure_type === "REGULAR"
+          )
+          if (cycleExec && !cycleExec.cycles_remaining) {
+            onPaymentCompleted()
+            return
+          }
+        }
+
+        setErrorMessage(`An error occurred, status: ${subscription.status}`)
       })
       .catch(() => {
         setErrorMessage(`An unknown error occurred, please try again.`)
@@ -231,11 +285,31 @@ const PayPalPaymentButton = ({
   }
 
   if (isResolved) {
+    if (session.data.subscription) {
+      return (
+        <>
+          <PayPalButtons
+            style={{ layout: "horizontal", label: "subscribe" }}
+            createSubscription={async () =>
+              (session.data.subscription as any).id
+            }
+            onApprove={handleSubscription}
+            disabled={notReady || submitting || isPending}
+            data-testid={dataTestId}
+          />
+          <ErrorMessage
+            error={errorMessage}
+            data-testid="paypal-payment-error-message"
+          />
+        </>
+      )
+    }
+
     return (
       <>
         <PayPalButtons
           style={{ layout: "horizontal" }}
-          createOrder={async () => session.data.id as string}
+          createOrder={async () => (session.data.order as any).id as string}
           onApprove={handlePayment}
           disabled={notReady || submitting || isPending}
           data-testid={dataTestId}
