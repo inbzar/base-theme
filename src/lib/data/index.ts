@@ -21,6 +21,7 @@ import { ProductCategoryWithChildren, ProductPreviewType } from "types/global"
 import { medusaClient } from "@lib/config"
 import medusaError from "@lib/util/medusa-error"
 import { cookies } from "next/headers"
+import { PurchasePreferences } from "extended-types"
 
 const emptyResponse = {
   response: { products: [], count: 0 },
@@ -755,3 +756,18 @@ export const getProductsByCategoryHandle = cache(async function ({
     nextPage,
   }
 })
+
+export async function addCartPurchasePreferences({
+  cartId,
+  preferences,
+}: {
+  cartId: string
+  preferences: PurchasePreferences
+}) {
+  const headers = getMedusaHeaders(["cart"])
+
+  return medusaClient.carts
+    .update(cartId, { purchase_preferences: preferences }, headers)
+    .then(({ cart }) => cart)
+    .catch((err) => medusaError(err))
+}

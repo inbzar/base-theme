@@ -39,7 +39,7 @@ const Shipping: React.FC<ShippingProps> = ({
 
   const handleSubmit = () => {
     setIsLoading(true)
-    router.push(pathname + "?step=payment", { scroll: false })
+    router.push(pathname + "?step=purchase-preferences", { scroll: false })
   }
 
   const set = async (id: string) => {

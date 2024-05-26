@@ -6,6 +6,7 @@ import { revalidateTag } from "next/cache"
 import { cookies } from "next/headers"
 
 import {
+  addCartPurchasePreferences,
   addItem,
   createCart,
   getCart,
@@ -15,6 +16,7 @@ import {
   updateCart,
   updateItem,
 } from "@lib/data"
+import { PurchasePreferences } from "extended-types"
 
 /**
  * Retrieves the cart based on the cartId cookie
@@ -197,4 +199,19 @@ export async function enrichLineItems(
   }) as LineItem[]
 
   return enrichedItems
+}
+
+export async function setCartPurchasePreferences(
+  preferences: PurchasePreferences
+) {
+  const cartId = cookies().get("_medusa_cart_id")?.value
+
+  if (!cartId) throw new Error("No cartId cookie found")
+
+  try {
+    await addCartPurchasePreferences({ cartId, preferences })
+    revalidateTag("cart")
+  } catch (error: any) {
+    throw error
+  }
 }

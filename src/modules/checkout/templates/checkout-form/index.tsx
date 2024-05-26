@@ -6,6 +6,7 @@ import {
 import { getCheckoutStep } from "@lib/util/get-checkout-step"
 import Addresses from "@modules/checkout/components/addresses"
 import Payment from "@modules/checkout/components/payment"
+import PurchasePreferences from "@modules/checkout/components/purchase-preferences"
 import Review from "@modules/checkout/components/review"
 import Shipping from "@modules/checkout/components/shipping"
 import { cookies } from "next/headers"
@@ -53,6 +54,10 @@ export default async function CheckoutForm() {
             cart={cart}
             availableShippingMethods={availableShippingMethods}
           />
+        </div>
+
+        <div>
+          <PurchasePreferences cart={cart} />
         </div>
 
         <div>

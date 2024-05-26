@@ -4,16 +4,18 @@ import { Region } from "@medusajs/medusa"
 import { PricedProduct } from "@medusajs/medusa/dist/types/pricing"
 import { Button } from "@medusajs/ui"
 import { isEqual } from "lodash"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import { useIntersection } from "@lib/hooks/use-in-view"
-import { addToCart } from "@modules/cart/actions"
+import { addToCart, setCartPurchasePreferences } from "@modules/cart/actions"
 import Divider from "@modules/common/components/divider"
 import OptionSelect from "@modules/products/components/option-select"
 
 import MobileActions from "../mobile-actions"
 import ProductPrice from "../product-price"
+import { getProductOrderRestriction } from "@lib/util/get-product-order-restriction"
+import { getPurchasePrefs } from "@lib/util/get-purchase-prefs"
 
 type ProductActionsProps = {
   product: PricedProduct
@@ -35,6 +37,7 @@ export default function ProductActions({
 }: ProductActionsProps) {
   const [options, setOptions] = useState<Record<string, string>>({})
   const [isAdding, setIsAdding] = useState(false)
+  const router = useRouter()
 
   const countryCode = useParams().countryCode as string
 
@@ -50,6 +53,11 @@ export default function ProductActions({
 
     setOptions(optionObj)
   }, [product])
+
+  const restriction = useMemo(
+    () => getProductOrderRestriction(product),
+    [product]
+  )
 
   // memoized record of the product's variants
   const variantRecord = useMemo(() => {
@@ -131,6 +139,12 @@ export default function ProductActions({
       quantity: 1,
       countryCode,
     })
+
+    if (product.is_subscription_box) {
+      const prefs = getPurchasePrefs(product, variant)
+      await setCartPurchasePreferences(prefs)
+      router.push(`/${countryCode}/checkout?step=address`)
+    }
 
     setIsAdding(false)
   }
